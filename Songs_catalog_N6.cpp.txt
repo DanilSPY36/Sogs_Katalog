@@ -1,0 +1,277 @@
+#include "Funct.h"
+// actual programm
+using namespace std; 
+
+/////////////////////////////////////////////////////
+#define _CRT_SECURE_NO_WARNINGS
+
+#define ESC 27
+#define ENTER 13
+#define SPACE 32
+
+#define UP 72
+#define DOWN 80 
+#define LEFT 75
+#define RIGHT 77
+/////////////////////////////////////////////////////
+
+/*
+
+Список функций программы:
+
+1) Добавление песни:
+    * можно добавить через ввод с клавиатуры.
+    * загрузить с файла
+2) Удаление текста песни.
+3) Изменение текста песни.
+4) Отображение текста песни на экран.
+5) Сохранение текста в файл.
+6) Поиск и отображение всех песен одного автора.
+7) Поиск и отображение всех песен, содержащих слово, 
+указанное пользователем. 
+
+*/
+
+/////////////////////////////////////////////////////
+
+
+int main()
+{
+    ///////////////////////////////////////////////////////////////////////////
+
+    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTitle(L"Nazarko Danil");
+    system("CLS");
+    setlocale(0, "");
+    ConsoleCursorVisible(false, 100);
+
+    string menu[7] = {"Add lyrics", "Delete lyrics",
+                     "Change lyrics", 
+                     "Cout lyrics on the screen", 
+                     "Saving lirycs to a file",
+                     "Song searcher",
+                     "Exit"};
+    string submenu[3] = {"Enter from the keyboard",
+                        "Load from file",
+                        "Exit" };
+
+    int activeMenu = 0;
+    string* menuptr;
+    menuptr = menu;
+    char ch;
+
+
+    int actsubmenu = 0;
+    string* submenuptr;
+    submenuptr = submenu;
+    char chsub;
+    int ex = 1;
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    int amountOfDate = 0;
+    songs* data = new songs[amountOfDate];
+
+    string fileName = "Songs.txt";
+    string SaveFile = "SavedSongs.txt";
+    ///////////////////////////////////////////////////////////////////////////
+
+    while (true)
+    {
+       
+        ex = 1;
+        int x = 50, y = 13;
+        XY(x, y);
+        SetColor(activeMenu, menuptr, x, y);
+        ch = _getch();
+        if (ch == -32) ch = _getch(); // Отлавливаем стрелочки
+        switch (ch)
+        {
+        case ESC:
+            exit(0);
+        case UP:
+            if (activeMenu > 0) { activeMenu--; }
+            break;
+        case DOWN:
+            if (activeMenu < 7) { activeMenu++; }
+            break;
+        case ENTER:
+            switch (activeMenu)
+            {
+            //////////// Add lyrics ////// Добавить текст //////////////////////////////////////////////////////////////////////
+            case 0:
+                system("CLS");
+                
+                actsubmenu = 0;
+
+                while (ex)
+                {
+                    
+                    //if (ex == 0) { break; }
+                    XY(x, y);
+                    SetSubMenuColor(actsubmenu, submenuptr, x, y);
+                    char choise;
+                    choise = _getch();
+                    if (choise == -32) choise = _getch(); // Отлавливаем стрелочки
+                    switch (choise)
+                    {
+                    case ESC:
+                        break;
+                    case UP:
+                        if (actsubmenu > 0) { actsubmenu--; }
+                        break;
+                    case DOWN:
+                        if (actsubmenu < 3) { actsubmenu++; }
+                        break;
+                    case ENTER:
+                        switch (actsubmenu)
+                        {
+                        /////////// Enter from the keyboard ////// Ввод с клавиатуры ///////////////////////////
+                        case 0:
+                            EnterData(data, amountOfDate);
+                            ++amountOfDate;
+                            break;
+                        ////////////Load from file /////// Загрузить с файла ///////////////////////////////////
+                        case 1:
+                            system("CLS");
+                            XY(x - 5, y - 12);
+                            SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+                            cout << "You enter the  \"" << submenu[actsubmenu] << "\"\n";
+                            EnterFromFile(data, amountOfDate, fileName);
+                            _getch();
+                            system("CLS");
+                            break;
+                        /////////////////////////////Выход из подменю в основное меню //////////////////////////
+                        case 2:
+                            ex = 0;
+                            system("CLS");
+                            break;
+                        }
+                    }
+                }
+                break;
+
+            ////////// Delete lyrics //// Удалить текст ////////////////////////////////////////////////////////////////////////
+            case 1:
+                if (amountOfDate == 0)
+                {
+                    system("CLS");
+                    XY(x - 5, y);
+                    SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_BLUE);
+                    cout << "List of songs is empty. Enter the song. ";
+                    _getch();
+                    system("CLS");
+                }
+                else
+                {
+                    system("CLS");
+                    XY(x - 5, y - 12);
+                    SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+                    cout << "You enter the  \"" << menu[activeMenu] << "\"\n";
+                    DelData(data, amountOfDate);
+                }
+                break;
+
+            //////// Change lyrics ///// Изменить текст ////////////////////////////////////////////////////////////////////////
+            case 2: 
+                if (amountOfDate == 0)
+                {
+                    system("CLS");
+                    XY(x - 5, y - 1);
+                    SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_BLUE);
+                    cout << "List of songs is empty. Enter the song. ";
+                    _getch();
+                    system("CLS");
+                }
+                else
+                {
+                    system("CLS");
+                    XY(x - 5, y - 12);
+                    SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+                    cout << "You enter the  \"" << menu[activeMenu] << "\"\n";
+                    ChangeLyrics(data, amountOfDate);
+                }
+                break;
+
+
+            /////// Cout lyrics on the screen //// Вывести текст песни на экран ////////////////////////////////////////////////
+            case 3:
+                if (amountOfDate == 0)
+                {
+                    system("CLS");
+                    XY(x - 5, y - 1);
+                    SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_BLUE);
+                    cout << "List of songs is empty. Enter the song. ";
+                    _getch();
+                    system("CLS");
+                }
+                else
+                {
+                    system("CLS");
+                    XY(x - 5, y - 12);
+                    SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+                    cout << "You enter the  \"" << menu[activeMenu] << "\"\n";
+                    CoutLyrics(data, amountOfDate);
+                }
+                break;
+
+
+            /////// Saving lirycs to a file //// Сохранить текст в файл ////////////////////////////////////////////////////////
+            case 4:
+                if (amountOfDate == 0)
+                {
+                    system("CLS");
+                    XY(x - 5, y - 1);
+                    SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_BLUE);
+                    cout << "List of songs is empty. Enter the song. ";
+                    _getch();
+                    system("CLS");
+                }
+                else
+                {
+                    system("CLS");
+                    XY(x - 5, y - 12);
+                    SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+                    cout << "You enter the  \"" << menu[activeMenu] << "\"\n";
+                    FileSaver(data, amountOfDate, SaveFile);
+                }
+                break;
+
+
+            //////// Searching and Cout all songs of the same author //// Поиск песни по автору /////////////////////////////////
+            case 5:
+                if (amountOfDate == 0)
+                {
+                    system("CLS");
+                    XY(x - 5, y - 1);
+                    SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_BLUE);
+                    cout << "List of songs is empty. Enter the song. ";
+                    _getch();
+                    system("CLS");
+                }
+                else
+                {
+                    system("CLS");
+                    XY(x - 5, y - 12);
+                    SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+                    cout << "You enter the  \"" << menu[activeMenu] << "\"\n";
+                    SongSearcher(data, amountOfDate);
+                }
+                break;
+                
+
+
+            //////// EXIT ////////////// ВЫХОД //////////////////////////////////////////////////////////////////////////////////
+            case 6: 
+                exit(0);   
+            }
+            break;
+            
+
+
+        default:
+            cout << "key " << (int)ch << endl;
+
+        }
+    }
+}

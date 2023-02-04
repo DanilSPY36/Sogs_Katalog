@@ -1,0 +1,53 @@
+#pragma once
+
+
+#include <stdio.h>
+#include <iostream>
+#include <cstdlib>
+#include <vector>
+#include <Windows.h>
+#include <conio.h>
+#include <fstream>
+#include <string>
+
+
+using namespace std;
+
+
+/*
+
+Типы данных
+
+1) Название песни
+2) Автор
+3) Текст песни
+4) Год создания песни (если есть)
+
+*/
+
+struct songs 
+{
+	string songName;
+	string artistName;
+	string lyrics;
+	int year;
+
+};
+
+/////////////// MENU ///////////////////
+
+void XY(short x, short y);
+void ConsoleCursorVisible(bool show, short size);
+void SetColor(int activeMenu, string* menu, int x, int y);
+void SetSubMenuColor(int activeMenu, string* menu, int x, int y);
+void EnterMenu(string menu[], int activeMenu, int x, int y);
+
+////////////// LOGIC //////////////////
+void CopyDataForEnter(songs* (&newData), songs* (&oldData), int n);
+void EnterData(songs* (&data), int& n);
+void DelData(songs* (&data), int& n);
+void ChangeLyrics(songs* (&data), int& n);
+void CoutLyrics(songs* data, int n);
+void EnterFromFile(songs* (&data), int& n, string fileName);
+void FileSaver(songs* data, int n, string fileName);
+void SongSearcher(songs* data, int n);

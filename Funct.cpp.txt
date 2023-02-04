@@ -1,0 +1,736 @@
+#define _CRT_SECURE_NO_WARNINGS
+#define ESC 27
+#define ENTER 13
+#define SPACE 32
+#define UP 72
+#define DOWN 80 
+#define LEFT 75
+#define RIGHT 77
+
+#define green SetConsoleTextAttribute(hStdOut, !FOREGROUND_BLUE | !FOREGROUND_RED | FOREGROUND_INTENSITY | FOREGROUND_GREEN); 
+#define violet SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+#define red SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_BLUE);
+#define white SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+
+#include "Funct.h"
+
+
+
+using namespace std;
+
+//////////////////////////////////////////////////////////////////////
+
+/*
+
+Список функций программы:
+
+1) Добавление песни:
+    * можно добавить через ввод с клавиатуры.        +
+    * загрузить с файла                              + Можно добавлять с файла если уже есть в памяти тексты 
+2) Удаление песни.                                   + и наоборот добавлять сначала из файла и потом еще накидывать.
+3) Изменение песни.                                  +
+4) Отображение текста песни на экран.                +
+5) Сохранение текста в файл.                         +
+6) Поиск и отображение всех песен одного автора.     +
+7) Поиск и отображение всех песен, содержащих слово,
+указанное пользователем.                             +
+
+*/
+
+//////////////////////////////colors///////////////////////////////////////
+// 
+// 
+// ЗЕЛЕНЫЙ      SetConsoleTextAttribute(hStdOut, !FOREGROUND_BLUE | !FOREGROUND_RED | FOREGROUND_INTENSITY | FOREGROUND_GREEN); 
+// ФИОЛЕТОВЫЙ   SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+// КРАСНЫЙ      SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_BLUE);
+// 
+/////////////////////////////// menu //////////////////////////////////////
+HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+void XY(short x, short y)
+{
+    SetConsoleCursorPosition(hStdOut, { x, y });
+}
+void ConsoleCursorVisible(bool show, short size)
+{
+    CONSOLE_CURSOR_INFO structCursorInfo;
+    GetConsoleCursorInfo(hStdOut, &structCursorInfo);
+
+
+    structCursorInfo.bVisible = show;
+    structCursorInfo.dwSize = size;
+
+    SetConsoleCursorInfo(hStdOut, &structCursorInfo);
+
+}
+void SetColor(int activeMenu, string* menu, int x, int y)
+{
+    for (int i = 0; i < 7; i++)
+    {
+        if (i == activeMenu) 	SetConsoleTextAttribute(hStdOut, !FOREGROUND_BLUE | !FOREGROUND_RED | FOREGROUND_INTENSITY | FOREGROUND_GREEN);
+        else 	SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+
+        XY(x, y++);
+        cout << menu[i] << endl;
+    }
+}
+void SetSubMenuColor(int activeMenu, string* menu, int x, int y) {
+    for (int i = 0; i < 3; i++)
+    {
+        if (i == activeMenu) 	SetConsoleTextAttribute(hStdOut, !FOREGROUND_BLUE | !FOREGROUND_RED | FOREGROUND_INTENSITY | FOREGROUND_GREEN);
+        else 	SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+
+        XY(x, y++);
+        cout << menu[i] << endl;
+    }
+}
+void EnterMenu(string menu[], int activeMenu, int x, int y)
+{
+    system("CLS");
+    XY(x, y);
+    SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+    cout << "You enter the  \"" << menu[activeMenu] << "\"";
+    _getch();
+    system("CLS");
+}
+//////////////////////////////////////////////////////////////////////
+
+void CopyDataForEnter(songs* (&newData), songs* (&oldData), int n)
+{
+    for (int i = 0; i < n; i++) 
+    {
+        newData[i] = oldData[i];
+    }
+}
+void EnterData(songs* (&data), int &n)
+{
+    int x = 1, y = 7;
+    system("CLS");
+    songs* dataTmp = new songs[n];
+    CopyDataForEnter(dataTmp, data, n);
+
+    n++;
+    data = new songs[n];
+
+    CopyDataForEnter(data, dataTmp,  --n);
+
+    white;
+    cout << "==============Cart song Number" << n + 1 << "===============\n";
+    ConsoleCursorVisible(true, 100);
+    violet;
+    cout << "Enter the Name of the song: ";
+    green;
+    cin.ignore();
+    getline(cin, data[n].songName);
+    violet;
+    cout << "\nEnter the auther: ";
+    green;
+    //cin.ignore();
+    getline(cin, data[n].artistName);
+    violet;
+    cout << "\nEnter the year: ";
+    green;
+    cin >> data[n].year;
+    violet;
+    cout << "\nEnter the lyrics: \n";
+    string bufer;
+    while (true)
+    {
+        green;
+        XY(x, y);
+
+        //cin.ignore();
+
+        getline(cin, bufer);
+        data[n].lyrics += bufer + "\n";
+        y++;
+
+        if (_getch() == ESC)
+        {
+            break;
+        }
+    }
+    white;
+    cout << "==============================================";
+    _getch();
+    system("CLS");
+    delete[] dataTmp;
+    ConsoleCursorVisible(false, 100);
+}
+void EnterFromFile(songs* (&data), int& n, string fileName)
+{
+    int x = 50, y = 13;
+
+    ifstream fin; /// Поток для чтения 
+    fin.open(fileName);
+
+    string bufer = "=================================================";
+    string CartEnd = "=================================================";
+    string NumberOfSong;
+
+    string endNameStr = "Song name: ";
+    string endAuthorStr = "Auther: ";
+    string endYearStr = "Year: ";
+    string endLyrics = "Lyrics:";
+
+    int pos;
+    int counter = 0;
+
+    if (!fin.is_open())
+    {
+        XY(x - 5, y);
+        red;
+        cout << "ERROR.";
+        _getch();
+        system("cls");
+    }
+    else
+    {
+        while (!fin.eof()) //// цикл проходит по всем строчкам до конца файла.
+        {
+            NumberOfSong = "";
+            getline(fin, NumberOfSong);
+            if (NumberOfSong == bufer)
+            {
+                counter++;
+            }
+        }
+        cout << "Kol Carts: " << counter << "\n"; //// Количество карточек песен в файле.
+        bufer = ""; /// Чистим буфер.
+        fin.close();
+
+        int IndexCounter = n;
+
+        if (n == 0) 
+        {
+            n = counter;
+            data = new songs[counter];
+            ifstream fin(fileName); /// Поток для чтения 
+
+
+            data = new songs[counter];
+            n = counter;
+            counter = 0;
+            while (!fin.eof()) //// цикл проходит по всем строчкам до конца файла.
+            {
+                bufer = "";
+                getline(fin, bufer);
+                if (bufer == "=================================================") {
+                    counter++;
+                }
+                else if (bufer.find(endNameStr) != string::npos)
+                {
+                    white;
+                    cout << "\n\n============== Cart song Number " << counter + 1 << " ===============\n";
+
+                    data[counter].songName = bufer.substr(11);
+                    violet;
+                    cout << "\nSong name: ";
+                    green; 
+                    cout << data[counter].songName << "\n";
+
+                }
+                else if (bufer.find(endAuthorStr) != string::npos)
+                {
+                    data[counter].artistName = bufer.substr(8);
+                    violet;
+                    cout << "Auther: ";
+                    green;
+                    cout << data[counter].artistName << "\n";
+                }
+                else if (bufer.find(endYearStr) != string::npos)
+                {
+                    data[counter].year = (int)atof(bufer.substr(6).c_str()); /// страшная штука приобразующая строку сначала в double через atof потом в int. c_str формирует массив чаров из строки bufer.
+                    violet;
+                    cout << "Year: ";
+                    green;
+                    cout << data[counter].year << "\n";
+                }
+                if (bufer.find(endLyrics) != string::npos)
+                {
+                    violet;
+                    cout << "Lyrics: \n";
+                    while (bufer != "=================================================")
+                    {
+                        getline(fin, bufer);
+                        if (bufer != "=================================================") {
+
+                            data[counter].lyrics += bufer + "\n";
+                        }
+                        if (bufer == "=================================================")
+                        {
+                            data[counter].lyrics;
+                            green;
+                            cout << data[counter].lyrics;
+                          
+                            counter++;
+
+                        }
+                    }
+                    white;
+                    cout << "=================================================";
+                }
+
+            }
+        }
+        else 
+        {
+            songs* dataTmp = new songs[n];
+            CopyDataForEnter(dataTmp, data, n);
+            n += counter;
+            cout << "Kol Carts: " << n << "\n";
+      
+            data = new songs[n];
+            CopyDataForEnter(data, dataTmp, n - counter);
+            ifstream fin(fileName); /// Поток для чтения 
+
+
+            while (!fin.eof()) //// цикл проходит по всем строчкам до конца файла.
+            {
+                bufer = "";
+                getline(fin, bufer);
+                if (bufer == "=================================================") {
+                    IndexCounter++;
+                }
+                else if (bufer.find(endNameStr) != string::npos)
+                {
+                    white;
+                    cout << "=================================================";
+                    data[IndexCounter].songName = bufer.substr(11);
+                    violet;
+                    cout << "\nSong name: ";
+                    green;
+                    cout << data[IndexCounter].songName << "\n";
+
+                }
+                else if (bufer.find(endAuthorStr) != string::npos)
+                {
+                    data[IndexCounter].artistName = bufer.substr(8);
+                    violet;
+                    cout << "Auther: ";
+                    green;
+                    cout << data[IndexCounter].artistName << "\n";
+                }
+                else if (bufer.find(endYearStr) != string::npos)
+                {
+                    data[IndexCounter].year = (int)atof(bufer.substr(6).c_str()); /// страшная штука приобразующая строку сначала в double через atof потом в int. c_str формирует массив чаров из строки bufer.
+                    violet;
+                    cout << "Year: ";
+                    green;
+                    cout << data[IndexCounter].year << "\n";
+                }
+                if (bufer.find(endLyrics) != string::npos)
+                {
+                    violet;
+                    cout << "Lyrics: \n";
+                    while (bufer != "=================================================")
+                    {
+                        getline(fin, bufer);
+                        if (bufer != "=================================================") {
+
+                            data[IndexCounter].lyrics += bufer + "\n";
+                        }
+                        if (bufer == "=================================================")
+                        {
+                            data[IndexCounter].lyrics;
+                            green;
+                            cout << data[IndexCounter].lyrics;
+                            IndexCounter++;
+
+                        }
+                    }
+                    white;
+                    cout << "=================================================";
+                }
+            }
+        }
+        fin.close();
+    }
+    /*
+============== Cart song Number 2 ===============
+Song name: def
+Auther: 3
+Year: 1234
+Lyrics: 
+wer qwe r
+we rwq er 
+qwer qwer
+=================================================
+
+============== Cart song Number 3 ===============
+Song name: a
+Auther: 2
+Year: 44444
+Lyrics: 
+qwewqe 
+qwerqw e
+wqerqw 
+=================================================
+
+============== Cart song Number 4 ===============
+Song name: d
+Auther: 3333
+Year: 1234
+Lyrics: 
+
+ertyert 
+ertye rtye r
+ert er 
+
+=================================================
+    */
+}
+
+void DelData(songs* (&data), int& n)
+{
+    ConsoleCursorVisible(true, 100);
+    while (true)
+    {
+        int x = 50, y = 13;
+        int changeNum;
+        SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+        cout << "\t\t\t\t\tEnter the number of case to delete (1 to " << n << " ) : ";
+
+        for (int i = 0; i < n; i++) 
+        {
+            SetConsoleTextAttribute(hStdOut, !FOREGROUND_BLUE | !FOREGROUND_RED | FOREGROUND_INTENSITY | FOREGROUND_GREEN);
+            XY(x - 5, y - 8);
+            cout << i + 1 << ") " << data[i].songName << "\n";
+            ++y;
+        }
+        cout << "\t\t\t\t\t>>>";
+        cin >> changeNum;
+        changeNum--;
+        if (changeNum >= 0 and changeNum < n)
+        {
+            songs* dataTmp = new songs[n];
+            CopyDataForEnter(dataTmp, data, n);
+            --n;
+            data = new songs[n];
+            CopyDataForEnter(data, dataTmp, n);
+
+            int newAmountCases = 0;
+
+            for (int i = 0; i <= n; i++) {
+                if (i != changeNum)
+                {
+                    data[newAmountCases] = dataTmp[i];
+                    ++newAmountCases;
+                }
+            }
+            delete[]dataTmp;
+            
+            system("CLS");
+            break;
+        }
+        else 
+        {
+            system("CLS");
+            SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_BLUE);
+            cout << "Wrong number of the case. Try again.";
+            _getch();
+            system("cls");
+        }
+    }
+    ConsoleCursorVisible(false, 100);
+}
+void ChangeLyrics(songs* (&data), int& n) 
+{
+    ConsoleCursorVisible(true, 100);
+    while (true)
+    {
+        int x = 50, y = 13;
+        int changeNum;
+        for (int i = 0; i < n; i++)
+        {
+            SetConsoleTextAttribute(hStdOut, !FOREGROUND_BLUE | !FOREGROUND_RED | FOREGROUND_INTENSITY | FOREGROUND_GREEN);
+            XY(x - 5, y - 8);
+            cout << i + 1 << ") " << data[i].songName << "\n";
+            ++y;
+        }
+
+        SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+        cout << "\t\t\t\t\tEnter the number of song to change (1 to " << n << " ) : ";
+        
+        if (_getch() == ESC)
+        {
+            break;
+        }
+        green;
+        cin >> changeNum;
+        changeNum--;
+
+        system("cls");
+        if (changeNum >= 0 and changeNum < n)
+        {
+            cout << "\nEnter the lyrics: \n\n";
+            string bufer;
+            SetConsoleTextAttribute(hStdOut, !FOREGROUND_BLUE | !FOREGROUND_RED | FOREGROUND_INTENSITY | FOREGROUND_GREEN);
+            while (true)
+            {
+                //cin.ignore();
+                data[changeNum].lyrics += "\n";
+                getline(cin, bufer);
+                data[changeNum].lyrics += bufer + "\n";
+                y++;
+
+                if (_getch() == ESC)
+                {
+                    ConsoleCursorVisible(false, 100);
+                    break;
+                }
+            }
+            ConsoleCursorVisible(false, 100);
+            cout << "\n\nCase chaged.";
+            _getch();
+            system("cls");
+            break;
+        }
+        else
+        {
+            XY(x - 5, y);
+            SetConsoleTextAttribute(hStdOut, FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_BLUE);
+            cout << "wrong number of the case. Try again.";
+            _getch();
+            system("cls");
+        }
+        ConsoleCursorVisible(false, 100);
+    }
+}
+void CoutLyrics(songs* data, int n)
+{
+    while (true)
+    {
+        int x = 50, y = 13;
+        int changeNum;
+        for (int i = 0; i < n; i++)
+        {
+            SetConsoleTextAttribute(hStdOut, !FOREGROUND_BLUE | !FOREGROUND_RED | FOREGROUND_INTENSITY | FOREGROUND_GREEN);
+            XY(x - 5, y - 10);
+            cout << i + 1 << ") " << data[i].songName << "\n";
+            ++y;
+        }
+
+        SetConsoleTextAttribute(hStdOut, FOREGROUND_BLUE | FOREGROUND_RED | !FOREGROUND_GREEN | !FOREGROUND_INTENSITY);
+        cout << "\n\t\t\t\t\t   Enter the number of song to print (1 to " << n << " ) : ";
+        green;
+        cin >> changeNum;
+        changeNum--;
+
+        system("cls");
+        if (changeNum >= 0 and changeNum < n)
+        {
+            white;
+            cout << "==============Cart song Number " << n  << "===============\n\n";
+            violet;
+            cout << "Song name: ";
+            green;
+            cout << data[changeNum].songName;
+            violet;
+            cout << "\nAuther: ";
+            green;
+            cout << data[changeNum].artistName;
+            violet;
+            cout << "\nlyrics:\n";
+            green;
+            cout << data[changeNum].lyrics;
+            violet;
+            cout << "\nYear: ";
+            green;
+            cout << data[changeNum].year;
+            white;
+            cout << "\n==============================================";
+            _getch();
+            system("cls");
+            ConsoleCursorVisible(false, 100);
+            break;
+        }
+        else
+        {
+            XY(x - 5, y);
+            red;
+            cout << "wrong number of the case. Try again.";
+            _getch();
+            system("cls");
+        }
+        ConsoleCursorVisible(false, 100);
+    }
+
+
+}
+void FileSaver(songs* data, int n, string fileName)
+{
+    system("cls");
+    int x = 50, y = 13;
+
+    ofstream fout;
+    fout.open(fileName, ofstream::app);
+
+    if (!fout.is_open())
+    {
+
+        XY(x - 5, y);
+        red;
+        cout << "ERROR.";
+        _getch();
+        system("cls");
+    }
+    else 
+    {
+        
+        for (int i = 0; i < n; i++)
+        {
+            fout << "============== Cart song Number " << i + 1 << " ===============\n";
+            fout << "Song name: " << data[i].songName << "\n";
+            fout << "Auther: " << data[i].artistName << "\n";
+            fout << "Year: " << data[i].year << "\n";
+            fout << "Lyrics: \n" << data[i].lyrics << "\n";
+            fout << "=================================================\n\n";
+        }
+        system("cls");
+        XY(x - 5, y - 1);
+        green;
+        cout << "File saved.";
+        _getch();
+        system("cls");
+        fout.close();
+    }
+}
+void SongSearcher(songs* data, int n) 
+{
+    int x = 50, y = 13;
+    string submenu[3] = { "Search by author",
+                       "Search by words",
+                       "Exit" };
+    int actsubmenu = 0;
+    string* submenuptr;
+    submenuptr = submenu;
+    char chsub;
+    int ex = 1;
+
+    string searchStr;
+    int count = 0;
+
+    while (ex)
+    {
+
+            //if (ex == 0) { break; }
+            XY(x, y);
+            SetSubMenuColor(actsubmenu, submenuptr, x, y);
+            char choise;
+            choise = _getch();
+            if (choise == -32) choise = _getch(); // Отлавливаем стрелочки
+            switch (choise)
+            {
+            case ESC:
+                break;
+            case UP:
+                if (actsubmenu > 0) { actsubmenu--; }
+                break;
+            case DOWN:
+                if (actsubmenu < 3) { actsubmenu++; }
+                break;
+            case ENTER:
+                switch (actsubmenu)
+                {
+                    /////////// Search by author ////// по автору ///////////////////////////
+                case 0:
+                    system("cls");
+                    cout << "Enter the name of author of song for search: ";
+                    ConsoleCursorVisible(true, 100);
+                    green;
+                    cin.ignore();
+                    getline(cin, searchStr);
+
+                    for (int i = 0; i < n; i++)
+                    {
+                        if (data[i].artistName.find(searchStr) != string::npos)
+                        {
+                            white;
+                            cout << "==============Cart song Number" << i << "===============\n\n";
+                            violet;
+                            cout << "Song name: ";
+                            green;
+                            cout << data[i].songName;
+                            violet;
+                            cout << "\nAuther: ";
+                            green;
+                            cout << data[i].artistName;
+                            violet;
+                            cout << "\nlyrics:\n";
+                            green;
+                            cout << data[i].lyrics;
+                            violet;
+                            cout << "\nYear: ";
+                            green;
+                            cout << data[i].year;
+                            white;
+                            cout << "\n==============================================";
+                            
+                            ConsoleCursorVisible(false, 100);
+                            count++;
+                            break;
+                        }
+                    }
+                    if (count == 0) {
+                        cout << "Empty";
+                    }
+                    count = 0;
+                    _getch();
+                    system("cls");
+                    break;
+                    ////////////Search by words /////// по словам ///////////////////////////////////
+                case 1:
+                    system("cls");
+                    cout << "Enter the word for search: ";
+                    ConsoleCursorVisible(true, 100);
+                    cin.ignore();
+                    green;
+                    getline(cin, searchStr);
+
+                    for (int i = 0; i < n; i++)
+                    {
+                        if (data[i].lyrics.find(searchStr) != string::npos)
+                        {
+                            white;
+                            cout << "==============Cart song Number" << i + 1 << "===============\n\n";
+                            violet;
+                            cout << "Song name: ";
+                            green;
+                            cout << data[i].songName;
+                            violet;
+                            cout << "\nAuther: ";
+                            green;
+                            cout << data[i].artistName;
+                            violet;
+                            cout << "\nlyrics:\n";
+                            green;
+                            cout << data[i].lyrics;
+                            violet;
+                            cout << "\nYear: ";
+                            green;
+                            cout << data[i].year;
+                            white;
+                            cout << "\n==============================================";
+                          
+                            ConsoleCursorVisible(false, 100);
+                            count++;
+                            break;
+                        }
+                    }
+                    if (count == 0) {
+                        cout << "Empty";
+                    }
+                    count = 0;
+                    _getch();
+                    system("cls");
+                    break;
+                    /////////////////////////////Выход из подменю в основное меню //////////////////////////
+                case 2:
+                    ex = 0;
+                    system("CLS");
+                    break;
+                }
+            }
+        }
+}
+//////////////////////////////////////////////////////////////////////
